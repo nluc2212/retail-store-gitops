@@ -76,10 +76,15 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: DB_PROVIDER
-          value: "sqlite"
-        - name: SQLITE_PATH
-          value: "/tmp/catalog.db"
+        - name: DB_TYPE
+          value: "in-memory"
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
 ---
 apiVersion: v1
 kind: Service
@@ -116,7 +121,7 @@ spec:
     spec:
       containers:
       - name: carts
-        image: public.ecr.aws/aws-containers/retail-store-sample-carts:latest
+        image: public.ecr.aws/aws-containers/retail-store-sample-carts:0.4.0
         ports:
         - containerPort: 8080
         env:
