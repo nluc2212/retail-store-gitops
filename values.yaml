@@ -1,0 +1,38 @@
+retail-store-sample-app:
+  # Cấu hình Frontend UI
+  ui:
+    service:
+      annotations:
+        service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      portName: http
+
+  # Catalog Service (Go + MySQL)
+  catalog:
+    database:
+      type: mysql
+      endpoint: catalog-mysql:3306
+      name: catalog
+    service:
+      portName: http
+
+  # Carts Service (Java + Redis)
+  carts:
+    database:
+      type: redis
+      endpoint: carts-redis:6379
+    service:
+      portName: http
+
+  # Orders Service (Java + PostgreSQL)
+  orders:
+    database:
+      type: postgresql
+      endpoint: orders-postgresql:5432
+      name: orders
+    service:
+      portName: http
+
+  # Checkout Service
+  checkout:
+    service:
+      portName: http
