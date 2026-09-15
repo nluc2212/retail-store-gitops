@@ -56,6 +56,57 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: catalog-db
+  namespace: default
+  labels:
+    app.kubernetes.io/name: catalog-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: catalog-db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: catalog-db
+    spec:
+      containers:
+      - name: mysql
+        image: public.ecr.aws/docker/library/mysql:5.7
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "defaultpassword"
+        - name: MYSQL_DATABASE
+          value: "socksdb"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-db
+  namespace: default
+  labels:
+    app.kubernetes.io/name: catalog-db
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3306
+    targetPort: 3306
+    name: mysql
+  selector:
+    app.kubernetes.io/name: catalog-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: catalog
   namespace: default
   labels:
@@ -76,8 +127,14 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: DB_TYPE
-          value: "in-memory"
+        - name: DB_ENDPOINT
+          value: "catalog-db:3306"
+        - name: DB_NAME
+          value: "socksdb"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "defaultpassword"
         resources:
           limits:
             memory: "256Mi"
@@ -105,6 +162,52 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: carts-db
+  namespace: default
+  labels:
+    app.kubernetes.io/name: carts-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: carts-db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carts-db
+    spec:
+      containers:
+      - name: dynamodb
+        image: public.ecr.aws/aws-containers/retail-store-sample-cart-dynamodb:0.7.0
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: carts-db
+  namespace: default
+  labels:
+    app.kubernetes.io/name: carts-db
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: dynamodb
+  selector:
+    app.kubernetes.io/name: carts-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: carts
   namespace: default
   labels:
@@ -121,12 +224,23 @@ spec:
     spec:
       containers:
       - name: carts
-        image: public.ecr.aws/aws-containers/retail-store-sample-carts:0.4.0
+        image: public.ecr.aws/aws-containers/retail-store-sample-cart:0.7.0
         ports:
         - containerPort: 8080
         env:
+        - name: CARTS_DYNAMODB_ENDPOINT
+          value: "http://carts-db:8000"
         - name: CARTS_DYNAMODB_TABLENAME
           value: "Items"
+        - name: AWS_DEFAULT_REGION
+          value: "ap-southeast-1"
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
 ---
 apiVersion: v1
 kind: Service
